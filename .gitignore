@@ -1,0 +1,14 @@
+node_modules
+dist
+.DS_Store
+.vite
+coverage
+*.user
+*.suo
+*.cache
+*.tsbuildinfo
+vite.config.js
+vite.config.d.ts
+work/npm-cache
+backend/**/bin
+backend/**/obj
