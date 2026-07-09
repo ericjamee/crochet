@@ -1,0 +1,11 @@
+services:
+  - type: web
+    name: crochet-mail-club-api
+    runtime: docker
+    plan: free
+    dockerfilePath: ./backend/CrochetMailClub.Api/Dockerfile
+    dockerContext: ./backend/CrochetMailClub.Api
+    healthCheckPath: /health
+    envVars:
+      - key: CORS_ALLOWED_ORIGINS
+        sync: false

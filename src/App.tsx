@@ -1,6 +1,12 @@
 import { FormEvent, ReactNode, useMemo, useState } from 'react';
 
 type WaitlistAudience = 'Me' | 'Gift' | 'Child or teen' | 'Not sure';
+type WaitlistEntry = {
+  firstName: string;
+  email: string;
+  audience: WaitlistAudience;
+  createdAt: string;
+};
 
 type ButtonProps = {
   children: ReactNode;
@@ -126,8 +132,21 @@ const pricingTiers: PricingTier[] = [
   },
 ];
 
+const apiBaseUrl = (import.meta.env.VITE_API_BASE_URL as string | undefined)?.replace(/\/$/, '');
+
+function storeWaitlistEntry(entry: WaitlistEntry) {
+  try {
+    const existing = localStorage.getItem('crochet-mail-club-waitlist');
+    const parsed = existing ? (JSON.parse(existing) as WaitlistEntry[]) : [];
+    localStorage.setItem('crochet-mail-club-waitlist', JSON.stringify([...parsed, entry]));
+  } catch {
+    // TODO: Replace local fallback storage after the backend is connected to durable waitlist storage.
+  }
+}
+
 function App() {
   const [submitted, setSubmitted] = useState(false);
+  const [isSubmitting, setIsSubmitting] = useState(false);
   const [formData, setFormData] = useState({
     firstName: '',
     email: '',
@@ -140,29 +159,48 @@ function App() {
     document.getElementById('waitlist')?.scrollIntoView({ behavior: 'smooth', block: 'start' });
   };
 
-  const handleSubmit = (event: FormEvent<HTMLFormElement>) => {
+  const handleSubmit = async (event: FormEvent<HTMLFormElement>) => {
     event.preventDefault();
 
-    const entry = {
+    const entry: WaitlistEntry = {
       ...formData,
       createdAt: new Date().toISOString(),
     };
 
+    setIsSubmitting(true);
+
     try {
-      const existing = localStorage.getItem('crochet-mail-club-waitlist');
-      const parsed = existing ? (JSON.parse(existing) as typeof entry[]) : [];
-      localStorage.setItem('crochet-mail-club-waitlist', JSON.stringify([...parsed, entry]));
+      if (apiBaseUrl) {
+        const response = await fetch(`${apiBaseUrl}/api/waitlist`, {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+          },
+          body: JSON.stringify({
+            firstName: entry.firstName,
+            email: entry.email,
+            audience: entry.audience,
+          }),
+        });
+
+        if (!response.ok && response.status !== 409) {
+          throw new Error('Waitlist request failed.');
+        }
+      } else {
+        storeWaitlistEntry(entry);
+      }
     } catch {
-      // TODO: Replace local-only storage with a .NET API call once email capture is connected.
+      storeWaitlistEntry(entry);
     }
 
-    // TODO: POST waitlist submissions to the future .NET backend and connect Stripe checkout when plans go live.
+    // TODO: Connect Stripe checkout once subscriptions are ready to launch.
     setSubmitted(true);
     setFormData({
       firstName: '',
       email: '',
       audience: 'Me',
     });
+    setIsSubmitting(false);
   };
 
   return (
@@ -526,9 +564,10 @@ function App() {
 
                   <button
                     type="submit"
+                    disabled={isSubmitting}
                     className="flex w-full items-center justify-center rounded-full bg-clay px-6 py-3.5 text-base font-extrabold text-white transition hover:bg-clay/90 focus:outline-none focus:ring-4 focus:ring-clay/20"
                   >
-                    Join the Crochet Mail Club waitlist
+                    {isSubmitting ? 'Joining...' : 'Join the Crochet Mail Club waitlist'}
                   </button>
                 </form>
               )}
