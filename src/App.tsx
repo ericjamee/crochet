@@ -132,7 +132,24 @@ const pricingTiers: PricingTier[] = [
   },
 ];
 
-const apiBaseUrl = (import.meta.env.VITE_API_BASE_URL as string | undefined)?.replace(/\/$/, '');
+const configuredApiBaseUrl = (import.meta.env.VITE_API_BASE_URL as string | undefined)?.replace(/\/$/, '');
+const hostedApiFallbackUrl = 'https://crochet-mail-club-api.onrender.com';
+
+function isHostedFrontend(hostname: string) {
+  return hostname.endsWith('.vercel.app');
+}
+
+function getApiBaseUrl() {
+  if (configuredApiBaseUrl) {
+    return configuredApiBaseUrl;
+  }
+
+  if (typeof window !== 'undefined') {
+    return isHostedFrontend(window.location.hostname) ? hostedApiFallbackUrl : '';
+  }
+
+  return '';
+}
 
 function storeWaitlistEntry(entry: WaitlistEntry) {
   try {
@@ -145,6 +162,7 @@ function storeWaitlistEntry(entry: WaitlistEntry) {
 }
 
 function App() {
+  const apiBaseUrl = getApiBaseUrl();
   const [submitted, setSubmitted] = useState(false);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [formData, setFormData] = useState({

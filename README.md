@@ -39,6 +39,8 @@ VITE_API_BASE_URL=http://localhost:5078
 
 If `VITE_API_BASE_URL` is not set or the API is unavailable, the waitlist form gracefully falls back to local browser storage.
 
+Any hosted Vercel frontend for this project also has a built-in fallback to the live Render API so the waitlist still works if the Vercel environment variable is temporarily missing.
+
 ## Deploy the backend to Render
 
 - A Render Blueprint file lives at `/render.yaml`
